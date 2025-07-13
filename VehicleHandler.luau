@@ -11,8 +11,6 @@
         • Fuel consumption and auto-shutdown
         • Headlights, indicators, horn
         • Durability tracking on impacts
-
-    Excluding blank lines & comments, this has 342 lines of Lua code.
 ]]
 
 -- Services (cached once for performance under heavy load)
