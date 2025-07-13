@@ -20,19 +20,10 @@ local SPEEDOMETER_UPDATE_RATE = 0.1 -- Seconds between UI updates
 -- Module table
 local MonowheelModule = {}
 
--- Utility: Error handling wrapper
-local function safeExecute(fn: () -> ())
-	-- Wrap in pcall and warn errors with line number
-	local success, err = pcall(fn)
-	if not success then
-		warn("[Monowheel] Error at line " .. tostring($line) .. ": " .. tostring(err))
-	end
-end
-
 -- Utility: Create RaycastParams blacklist filter
 local function createBlacklistParams(): RaycastParams
 	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Blacklist
+	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = {workspace.Characters, workspace.Vehicles}
 	return params
 end
@@ -56,10 +47,10 @@ local function getWallHit(cframe: CFrame, params: RaycastParams, throttle: numbe
 end
 
 -- Get floor hit for gravity counter
-local function getFloorHit(cframe: CFrame, prevFloor: Instance?, params: RaycastParams)
+local function getFloorHit(cframe: CFrame, prevFloor: BasePart?, params: RaycastParams)
 	-- Whitelist previous floor for closest point
 	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Whitelist
+	rayParams.FilterType = Enum.RaycastFilterType.Include
 	rayParams.FilterDescendantsInstances = {prevFloor or workspace}
 	local dir = (prevFloor and prevFloor.Position or (cframe.Position - Vector3.new(0,6))) - cframe.Position
 	return castRay(cframe.Position, dir, rayParams)
@@ -152,14 +143,12 @@ local function updateMovement(vehicle: any)
 	local steer = vehicle.Seat.Steer
 	local vel = vehicle.LinearVelocity.Magnitude
 	if vel > 2 then
-		safeExecute(function()
-			vehicle.Vehicle:PivotTo(
-				vehicle.Vehicle:GetPivot() * CFrame.Angles(
-					0, 0,
-					-math.rad(steer * 0.2 * ((vel / vehicle.Speed * 10) ^ 0.15))
-				)
+		vehicle.Vehicle:PivotTo(
+			vehicle.Vehicle:GetPivot() * CFrame.Angles(
+				0, 0,
+				-math.rad(steer * 0.2 * ((vel / vehicle.Speed * 10) ^ 0.15))
 			)
-		end)
+		)
 	end
 	-- Rotate root based on steering and velocity
 	vehicle.Align.CFrame *= CFrame.Angles(0, math.rad(-steer / 0.9 * (vel ^ 0.15)), 0)
@@ -206,16 +195,14 @@ end
 
 -- Bound to RenderStep for continuous updates
 local function onRenderStep(name: string, dt: number, vehicle: any)
-	safeExecute(function()
-		-- Refresh data
-		vehicle.LinearVelocity = vehicle.MonoRoot.AssemblyLinearVelocity
-		-- Camera
-		updateCamera(vehicle)
-		-- Movement
-		updateMovement(vehicle)
-		-- UI
-		updateSpeedometer(vehicle)
-	end)
+	-- Refresh data
+	vehicle.LinearVelocity = vehicle.MonoRoot.AssemblyLinearVelocity
+	-- Camera
+	updateCamera(vehicle)
+	-- Movement
+	updateMovement(vehicle)
+	-- UI
+	updateSpeedometer(vehicle)
 end
 
 
